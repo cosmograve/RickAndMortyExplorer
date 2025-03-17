@@ -10,7 +10,6 @@ import Combine
 import Kingfisher
 
 class StartViewController: UIViewController {
-    
     private var vm = StartViewModel()
     private var cancellables: Set<AnyCancellable> = []
     
@@ -75,6 +74,15 @@ class StartViewController: UIViewController {
                 self?.errorLabel.text = errorMessage
             }
             .store(in: &cancellables)
+        
+        vm.$characters
+            .receive(on: RunLoop.main)
+            .filter { !$0.isEmpty }
+            .delay(for: 1, scheduler: RunLoop.main)
+            .sink { [weak self] characters in
+                self?.navigateToMainScreen(with: characters)
+            }
+            .store(in: &cancellables)
     }
     
     private func loadImage(with urlString: String) {
@@ -85,12 +93,13 @@ class StartViewController: UIViewController {
             options: [
                 .transition(.fade(0.5))
             ],
-            completionHandler: { result in
+            completionHandler: { [weak self] result in
                 switch result {
                 case .success:
                     UIView.animate(withDuration: 1) {
-                        self.imageView.alpha = 1
+                        self?.imageView.alpha = 1
                     }
+                    self?.startAnimation()
                 case .failure(let error):
                     print("err: \(error.localizedDescription)")
                 }
@@ -98,4 +107,18 @@ class StartViewController: UIViewController {
         )
     }
     
+    private func startAnimation() {
+        UIView.animate(withDuration: 1.5, delay: 0, options: [.autoreverse, .repeat], animations: {
+            self.imageView.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
+        }, completion: nil)
+    }
+    
+    private func navigateToMainScreen(with characters: [Character]) {
+        imageView.layer.removeAllAnimations()
+        imageView.transform = .identity
+        guard let mainViewModel = vm.mainViewModel else { return }
+        let mainViewController = MainViewController(viewModel: mainViewModel)
+        mainViewController.modalPresentationStyle = .fullScreen
+        present(mainViewController, animated: true, completion: nil)
+    }
 }

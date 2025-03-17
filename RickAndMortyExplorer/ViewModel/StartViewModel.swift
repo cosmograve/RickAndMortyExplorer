@@ -8,31 +8,51 @@
 import Foundation
 import Combine
 
-class StartViewModel {
-    @Published var isLoading: Bool = false
+class StartViewModel: ObservableObject {
     @Published var characterImage: String?
     @Published var errorMsg: String?
+    @Published var characters: [Character] = []
+    @Published var mainViewModel: MainViewModel?
     
     private var cancellables: Set<AnyCancellable> = []
     private let api = RickAndMoryAPI()
     
     func checkFirstCharacter() {
-        isLoading.toggle()
         errorMsg = nil
-        
         api.fetchFirstCharacter()
             .sink(
-                receiveCompletion: { completion in
+                receiveCompletion: { [weak self] completion in
                     switch completion {
                     case .finished:
-                        print("ok")
+                        break
                     case .failure(let error):
-                        print("err: \(error.localizedDescription)")
+                        self?.errorMsg = error.localizedDescription
                     }
                 },
-                receiveValue: { character in
-                    print("loaded: \(character.name)")
-                    self.characterImage = character.image
+                receiveValue: { [weak self] character in
+                    print("\(character.name)")
+                    self?.characterImage = character.image
+                    self?.loadAllCharacters()
+                }
+            )
+            .store(in: &cancellables)
+    }
+    
+    private func loadAllCharacters() {
+        api.fetchAllCharacters()
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    switch completion {
+                    case .finished:
+                        break
+                    case .failure(let error):
+                        self?.errorMsg = error.localizedDescription
+                    }
+                },
+                receiveValue: { [weak self] characters in
+                    self?.characters = characters
+                    self?.mainViewModel = MainViewModel(characters: characters)
+                    
                 }
             )
             .store(in: &cancellables)
