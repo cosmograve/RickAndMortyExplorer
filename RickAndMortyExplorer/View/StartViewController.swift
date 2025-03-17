@@ -78,7 +78,7 @@ class StartViewController: UIViewController {
         vm.$characters
             .receive(on: RunLoop.main)
             .filter { !$0.isEmpty }
-            .delay(for: 1, scheduler: RunLoop.main)
+            .delay(for: 1.5, scheduler: RunLoop.main)
             .sink { [weak self] characters in
                 self?.navigateToMainScreen(with: characters)
             }
@@ -118,7 +118,8 @@ class StartViewController: UIViewController {
         imageView.transform = .identity
         guard let mainViewModel = vm.mainViewModel else { return }
         let mainViewController = MainViewController(viewModel: mainViewModel)
-        mainViewController.modalPresentationStyle = .fullScreen
-        present(mainViewController, animated: true, completion: nil)
+        let navigationController = UINavigationController(rootViewController: mainViewController)
+        navigationController.modalPresentationStyle = .fullScreen
+        present(navigationController, animated: true, completion: nil)
     }
 }
